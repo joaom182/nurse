@@ -1,12 +1,15 @@
 import React from 'react';
 import { View, StyleSheet, AppRegistry, Dimensions } from 'react-native';
-import { H1, Text, Segment, Button, Container, Content, Grid, Icon } from 'native-base';
-import theme from '../../native-base-theme/variables/material';
+import { H1, Text, Segment, Button, Container, Content, Grid, Icon, Toast } from 'native-base';
 import Timer from 'react-timer-mixin';
+import moment from 'moment';
+import shortid from 'shortid';
+import theme from '../../native-base-theme/variables/material';
+import NursesStorage from '../storage/NursesStorage';
 
-const _seios = {
-    esquerdo: 'esquerdo',
-    direito: 'direito'
+const _breasts = {
+    left: 'esquerdo',
+    right: 'direito'
 }
 
 const _colors = {
@@ -19,10 +22,17 @@ export default class Track extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-            currentSeio: _seios.esquerdo,
             timerPaused: true,
             timer: null,
-            time: 0
+            time: 0,
+            nurse: {
+                id: '',
+                breast: _breasts.left,
+                duration: '00h 00m 00s',
+                date: moment().format('DD/MM/YYYY HH:mm:ss'),
+                day: '',
+                time: ''
+            }
         };
     }
 
@@ -34,7 +44,7 @@ export default class Track extends React.Component {
         hours = (hours < 10) ? "0" + hours : hours;
         minutes = (minutes < 10) ? "0" + minutes : minutes;
         seconds = (seconds < 10) ? "0" + seconds : seconds;
-        return hours + ":" + minutes + ":" + seconds;
+        return hours + "h " + minutes + "m " + seconds + "s";
     }
 
     increaseTime() {
@@ -43,7 +53,7 @@ export default class Track extends React.Component {
         });
     }
 
-    getTimeValue(){
+    getTimeValue() {
         return this.secondsToTime(this.state.time);
     }
 
@@ -54,7 +64,7 @@ export default class Track extends React.Component {
         });
     }
 
-    resetTimer(){
+    resetTimer() {
         this.setState({
             time: 0
         });
@@ -75,19 +85,35 @@ export default class Track extends React.Component {
             this.stopTimer();
     }
 
-    saveTime() {
+    _nurseSaved() {
+        Toast.show({
+            text: 'Registro salvo!',
+            position: 'bottom',
+            duration: 1500
+        });
+    }
+
+    saveNurse = async () => {
         this.stopTimer();
+        this.state.nurse.duration = this.getTimeValue();
+        this.state.nurse.date = moment().format('DD/MM/YYYY HH:mm:ss');
+        this.state.nurse.day = moment().format('DD/MM/YYYY')
+        this.state.nurse.time = moment().format('HH\\h:mm');
+        await NursesStorage.saveNurse(this.state.nurse);
+        this._nurseSaved();
         this.resetTimer();
     }
 
-    defineCurrentSeio(seio) {
-        this.setState(prevState => ({
-            currentSeio: seio
-        }));
+    defineCurrentBreast(breast) {
+        this.setState({
+            nurse: {
+                breast
+            }
+        });
     }
 
     getBreastButtonOpts(key) {
-        var isActive = this.state.currentSeio == key;
+        var isActive = this.state.nurse.breast == key;
         return {
             active: isActive
         };
@@ -101,6 +127,10 @@ export default class Track extends React.Component {
         return !this.state.timerPaused ? 'Pausar' : 'Iniciar';
     }
 
+    isTimeZero() {
+        return this.state.time <= 0;
+    }
+
     render() {
         return (
             <View style={styles.contentWrapper}>
@@ -108,18 +138,17 @@ export default class Track extends React.Component {
                     <Segment>
                         <Button
                             first
-                            {...this.getBreastButtonOpts(_seios.esquerdo) }
-                            onPress={() => this.defineCurrentSeio(_seios.esquerdo)}>
+                            {...this.getBreastButtonOpts(_breasts.left) }
+                            onPress={() => this.defineCurrentBreast(_breasts.left)}>
                             <Text>Seio Esquerdo</Text>
                         </Button>
                         <Button
                             last
-                            {...this.getBreastButtonOpts(_seios.direito) }
-                            onPress={() => this.defineCurrentSeio(_seios.direito)}>
+                            {...this.getBreastButtonOpts(_breasts.right) }
+                            onPress={() => this.defineCurrentBreast(_breasts.right)}>
                             <Text>Seio Direito</Text>
                         </Button>
                     </Segment>
-
                     <View style={styles.timer.container}>
                         <Text style={styles.timer.text}>{this.getTimeValue()}</Text>
                     </View>
@@ -130,7 +159,12 @@ export default class Track extends React.Component {
                                 <Icon name={this.getIconName()} />
                                 <Text>{this.getButtonLabel()}</Text>
                             </Button>
-                            <Button outline bordered style={{ justifyContent: 'center' }} onPress={() => this.saveTime()}>
+                            <Button
+                                outline
+                                bordered
+                                disabled={this.isTimeZero()}
+                                style={{ justifyContent: 'center' }}
+                                onPress={() => this.saveNurse()}>
                                 <Icon name="ios-checkmark-circle-outline" />
                                 <Text>Salvar</Text>
                             </Button>

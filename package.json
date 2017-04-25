@@ -8,11 +8,15 @@
   },
   "dependencies": {
     "@expo/vector-icons": "^4.0.0",
+    "lodash": "^4.17.4",
+    "moment": "^2.18.1",
     "momentjs": "^2.0.0",
     "native-base": "^2.1.2",
     "react": "16.0.0-alpha.6",
     "react-native": "0.43.4",
-    "react-timer-mixin": "^0.13.3"
+    "react-native-sqlite-storage": "^3.3.1",
+    "react-timer-mixin": "^0.13.3",
+    "shortid": "^2.2.8"
   },
   "devDependencies": {
     "babel-jest": "19.0.0",
